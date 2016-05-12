@@ -7,8 +7,7 @@ import com.martiansoftware.nailgun.ThreadLocalPrintStream
 import dotty.tools.dotc.interfaces._
 import org.jetbrains.jps.incremental.scala.Client
 import org.jetbrains.jps.incremental.scala.data.{CompilationData, CompilerJars}
-import sbt.ClasspathOptions
-import sbt.compiler.CompilerArguments
+import sbt.internal.inc.{ClasspathOptions, CompilerArguments}
 import xsbti.compile.ScalaInstance
 
 import scala.collection.mutable

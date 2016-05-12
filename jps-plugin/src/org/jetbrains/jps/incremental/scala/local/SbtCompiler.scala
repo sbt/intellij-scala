@@ -5,14 +5,19 @@ import java.io.File
 
 import org.jetbrains.jps.incremental.scala.data.CompilationData
 import org.jetbrains.jps.incremental.scala.model.CompileOrder
-import sbt.compiler.IC.Result
-import sbt.compiler._
-import sbt.inc.{Analysis, AnalysisStore, IncOptions, Locate}
+import xsbti.compile.{CompileAnalysis, CompileOptions, CompileResult, DefinesClass, IncOptionsUtil, Inputs, PreviousResult, Setup}
+import sbt.internal.inc.{Analysis, AnalysisStore, AnalyzingCompiler, CompileOutput, CompilerCache, Locate}
+import sbt.internal.inc.javac.IncrementalCompilerJavaTools
+import sbt.inc.IncrementalCompilerUtil
+import sbt.util.InterfaceUtil
 
 /**
  * @author Pavel Fatin
  */
-class SbtCompiler(javac: JavaCompiler, scalac: Option[AnalyzingCompiler], fileToStore: File => AnalysisStore) extends AbstractCompiler {
+class SbtCompiler(javac: IncrementalCompilerJavaTools, scalac: Option[AnalyzingCompiler], fileToStore: File => AnalysisStore) extends AbstractCompiler {
+
+  private class Compilers(scalac: AnalyzingCompiler, javac: IncrementalCompilerJavaTools) extends xsbti.compile.Compilers
+
   def compile(compilationData: CompilationData, client: Client) {
 
     client.progress("Searching for changed files...")
@@ -38,42 +43,56 @@ class SbtCompiler(javac: JavaCompiler, scalac: Option[AnalyzingCompiler], fileTo
     val reporter = getReporter(client)
     val logger = getLogger(client)
 
-    val outputToAnalysisMap = compilationData.outputToCacheMap.map { case (output, cache) =>
+    val outputToAnalysisMap: xsbti.F1[File, xsbti.Maybe[CompileAnalysis]] = InterfaceUtil.f1(compilationData.outputToCacheMap.map { case (output, cache) =>
       val analysis = fileToStore(cache).get().map(_._1).getOrElse(Analysis.Empty)
-      (output, analysis)
-    }
+      (output, xsbti.Maybe.just(analysis))
+    })
 
     val incOptions = compilationData.sbtIncOptions match {
-      case None => IncOptions.Default
+      case None => IncOptionsUtil.defaultIncOptions()
       case Some(opt) =>
-        IncOptions.Default.withNameHashing(opt.nameHashing)
-                          .withRecompileOnMacroDef(opt.recompileOnMacroDef)
+        IncOptionsUtil.defaultIncOptions.withNameHashing(opt.nameHashing)
+                          .withRecompileOnMacroDef(xsbti.Maybe.just(opt.recompileOnMacroDef))
                           .withTransitiveStep(opt.transitiveStep)
                           .withRecompileAllFraction(opt.recompileAllFraction)
     }
 
-    try {
-      val Result(analysis, setup, hasModified) = IC.incrementalCompile(
-        scalac.orNull,
-        javac,
-        compilationData.sources,
-        compilationData.classpath,
-        compileOutput,
-        CompilerCache.fresh,
-        Some(progress),
-        compilationData.scalaOptions,
-        compilationData.javaOptions,
-        previousAnalysis,
-        previousSetup,
-        outputToAnalysisMap.get,
-        Locate.definesClass,
-        reporter,
-        order,
-        skip = false,
-        incOptions
-      )(logger)
+    val definesClass: xsbti.F1[File, DefinesClass] = InterfaceUtil.f1((f: File) => {
+      val dc = Locate.definesClass(f)
+      new DefinesClass {
+        override def apply(s: String): Boolean = dc(s)
+      }
+    })
 
-      analysisStore.set(analysis, setup)
+    val compilers = new Compilers(scalac.orNull, javac)
+    val compileOptions = new CompileOptions(compilationData.classpath.toArray,
+      compilationData.sources.toArray,
+      compilationData.output,
+      compilationData.scalaOptions.toArray,
+      compilationData.javaOptions.toArray,
+      100,
+      InterfaceUtil.f1(identity[xsbti.Position]),
+      order)
+    val setup = new Setup(outputToAnalysisMap,
+      definesClass,
+      /*skip = */ false,
+      compilationData.cacheFile,
+      CompilerCache.fresh,
+      incOptions,
+      reporter,
+      Array.empty)
+    val previousResult = new PreviousResult(xsbti.Maybe.just(previousAnalysis),
+      InterfaceUtil.o2m(previousSetup))
+    val inputs = new Inputs(compilers,
+      compileOptions,
+      setup,
+      previousResult)
+
+    try {
+      val incrementalCompiler = IncrementalCompilerUtil.defaultIncrementalCompiler
+      val result = incrementalCompiler.compile(inputs, logger)
+
+      analysisStore.set(result.analysis, result.setup)
 
     } catch {
       case _: xsbti.CompileFailed => // the error should be already handled via the `reporter`

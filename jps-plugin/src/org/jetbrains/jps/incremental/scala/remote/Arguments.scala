@@ -26,7 +26,8 @@ case class Arguments(sbtData: SbtData, compilerData: CompilerData, compilationDa
     val sbtIncOptions = compilationData.sbtIncOptions.map(_.asString).getOrElse("")
 
     Seq(
-      fileToPath(sbtData.interfaceJar),
+      fileToPath(sbtData.sbtInterfaceJar),
+      fileToPath(sbtData.compilerInterfaceJar),
       fileToPath(sbtData.sourceJar),
       fileToPath(sbtData.interfacesHome),
       sbtData.javaClassVersion,
@@ -55,7 +56,8 @@ object Arguments {
 
   def from(strings: Seq[String]): Arguments = strings match {
     case Seq(
-    PathToFile(interfaceJar),
+    PathToFile(sbtInterfaceJar),
+    PathToFile(compilerInterfaceJar),
     PathToFile(sourceJar),
     PathToFile(interfacesHome),
     javaClassVersion,
@@ -76,7 +78,7 @@ object Arguments {
     StringToSequence(worksheetClass),
     sbtIncOptionsString) =>
 
-      val sbtData = SbtData(interfaceJar, sourceJar, interfacesHome, javaClassVersion)
+      val sbtData = SbtData(sbtInterfaceJar, compilerInterfaceJar, sourceJar, interfacesHome, javaClassVersion)
 
       val compilerJars = compilerJarPaths.map {
         case PathsToFiles(Seq(libraryJar, compilerJar, extraJars @ _*)) =>

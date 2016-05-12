@@ -7,9 +7,9 @@ import java.net.URLClassLoader
 import org.jetbrains.jps.incremental.scala.data.{CompilerData, CompilerJars, SbtData}
 import org.jetbrains.jps.incremental.scala.local.CompilerFactoryImpl._
 import org.jetbrains.jps.incremental.scala.model.IncrementalityType
-import sbt.compiler.{AggressiveCompile, AnalyzingCompiler, IC}
-import sbt.inc.AnalysisStore
-import sbt.{ClasspathOptions, Path, ScalaInstance}
+import sbt.internal.inc.{ AnalysisStore, AnalyzingCompiler, ClasspathOptions, CompilerInterfaceProvider, RawCompiler, ScalaInstance }
+import sbt.internal.inc.javac.JavaTools
+import sbt.io.Path
 import xsbti.{F0, Logger}
 
 /**
@@ -31,9 +31,9 @@ class CompilerFactoryImpl(sbtData: SbtData) extends CompilerFactory {
       case IncrementalityType.SBT =>
         val javac = {
           val scala = getScalaInstance(compilerData.compilerJars)
-                  .getOrElse(new ScalaInstance("stub", null, new File(""), new File(""), Seq.empty, None))
+                  .getOrElse(new ScalaInstance("stub", null, new File(""), new File(""), Array.empty, None))
           val classpathOptions = ClasspathOptions.javac(compiler = false)
-          AggressiveCompile.directOrFork(scala, classpathOptions, compilerData.javaHome)
+          JavaTools.directOrFork(scala, classpathOptions, compilerData.javaHome)
         }
         new SbtCompiler(javac, scalac, fileToStore)
         
@@ -47,10 +47,10 @@ class CompilerFactoryImpl(sbtData: SbtData) extends CompilerFactory {
 
   def getScalac(sbtData: SbtData, compilerJars: Option[CompilerJars], client: Client): Option[AnalyzingCompiler] = {
     getScalaInstance(compilerJars).map { scala =>
-    val compiledIntefaceJar = getOrCompileInterfaceJar(sbtData.interfacesHome, sbtData.sourceJar,
-        sbtData.interfaceJar, scala, sbtData.javaClassVersion, client)
+      val compiledInterfaceJar = getOrCompileInterfaceJar(sbtData.interfacesHome, sbtData.sourceJar,
+        Seq(sbtData.sbtInterfaceJar, sbtData.compilerInterfaceJar), scala, sbtData.javaClassVersion, client)
 
-      IC.newScalaCompiler(scala, compiledIntefaceJar, ClasspathOptions.javac(compiler = false))
+      new AnalyzingCompiler(scala, CompilerInterfaceProvider.constant(compiledInterfaceJar), ClasspathOptions.javac(compiler = false))
     }
   }
 
@@ -66,19 +66,19 @@ object CompilerFactoryImpl {
 
       val classLoader = {
         val urls = Path.toURLs(jars.library +: jars.compiler +: jars.extra)
-        new URLClassLoader(urls, sbt.classpath.ClasspathUtilities.rootLoader)
+        new URLClassLoader(urls, sbt.internal.inc.classpath.ClasspathUtilities.rootLoader)
       }
 
       val version = readProperty(classLoader, "compiler.properties", "version.number")
 
-      new ScalaInstance(version.getOrElse("unknown"), classLoader, jars.library, jars.compiler, jars.extra, version)
+      new ScalaInstance(version.getOrElse("unknown"), classLoader, jars.library, jars.compiler, jars.extra.toArray, version)
     }
 
   }
 
   private def getOrCompileInterfaceJar(home: File,
                                        sourceJar: File,
-                                       interfaceJar: File,
+                                       interfaceJars: Seq[File],
                                        scalaInstance: ScalaInstance,
                                        javaClassVersion: String,
                                        client: Client): File = {
@@ -90,7 +90,8 @@ object CompilerFactoryImpl {
     if (!targetJar.exists) {
       client.progress("Compiling Scalac " + scalaVersion + " interface")
       home.mkdirs()
-      IC.compileInterfaceJar(interfaceId, sourceJar, targetJar, interfaceJar, scalaInstance, NullLogger)
+      val raw = new RawCompiler(scalaInstance, ClasspathOptions.auto, NullLogger)
+      AnalyzingCompiler.compileSources(sourceJar :: Nil, targetJar, interfaceJars, interfaceId, raw, NullLogger)
     }
 
     targetJar
