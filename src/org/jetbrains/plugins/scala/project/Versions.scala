@@ -18,13 +18,16 @@ object Versions extends Versions {
 
   def loadScalaVersions = loadVersionsOf(Scala)
 
-  def loadSbtVersions = loadVersionsOf(Sbt)
+  def loadSbtVersions = loadVersionsOf(Sbt) ++ loadVersionsOf(SbtMilestones)
 
   private object Scala extends Entity("http://repo1.maven.org/maven2/org/scala-lang/scala-compiler/",
     Version("2.8.0"), Seq("2.8.2", "2.9.3", "2.10.4", "2.11.5"))
 
   private object Sbt extends Entity("http://repo.typesafe.com/typesafe/ivy-releases/org.scala-sbt/launcher/",
     Version("0.12.0"), Seq("0.12.4", "0.13.7"))
+
+  private object SbtMilestones extends Entity("https://repo1.maven.org/maven2/org/scala-sbt/launcher/",
+    Version("1.0.0-M3"), Seq("1.0.0-M3"))
 }
 
 trait Versions {
