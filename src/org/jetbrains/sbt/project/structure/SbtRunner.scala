@@ -46,7 +46,7 @@ class SbtRunner(vmExecutable: File, vmOptions: Seq[String], environment: Map[Str
       val message = s"SBT $SinceSbtVersion+ required. Please update the project definition"
       Left(new UnsupportedOperationException(message))
     } else {
-      read1(directory, majorSbtVersion, options, listener)
+      read1(directory, "1-0-0-m4", options, listener)
     }
   }
 
@@ -62,10 +62,10 @@ class SbtRunner(vmExecutable: File, vmOptions: Seq[String], environment: Map[Str
 
     usingTempFile("sbt-structure", Some(".xml")) { structureFile =>
       val sbtCommands = Seq(
-        s"""set shellPrompt := { _ => "" }""",
+        s"""set shellPrompt := { _ => "$pluginFile" }""",
         s"""set SettingKey[Option[File]]("sbt-structure-output-file") in Global := Some(file("${path(structureFile)}"))""",
         s"""set SettingKey[String]("sbt-structure-options") in Global := "${options}" """,
-        s"""apply -cp "${path(pluginFile)}" org.jetbrains.sbt.CreateTasks""",
+        s"""apply -cp "${path(pluginFile)}" sbt.CreateTasks""",
         s"""*/*:dump-structure""",
         s"""exit""")
 

@@ -18,6 +18,7 @@ object Dependencies {
 
   val sbtStructureExtractor012 = "org.jetbrains" % "sbt-structure-extractor-0-12" % sbtStructureVersion
   val sbtStructureExtractor013 = "org.jetbrains" % "sbt-structure-extractor-0-13" % sbtStructureVersion
+  val sbtStructureExtractor100M4 = "org.jetbrains" % "sbt-structure-extractor-1-0-0-m4" % "0.1-SNAPSHOT"
   val sbtLaunch = "org.scala-sbt" % "sbt-launch" % sbtVersion
 
   val jamm = "com.github.jbellis" % "jamm" % "0.3.1"
@@ -26,7 +27,7 @@ object Dependencies {
   val scalaCompiler = "org.scala-lang" % "scala-compiler" % scalaVersion
   val scalaXml = "org.scala-lang.modules" %% "scala-xml" % "1.0.2"
   val scalaParserCombinators = "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4"
-  val sbtStructureCore = "org.jetbrains" % "sbt-structure-core_2.11" % sbtStructureVersion
+  val sbtStructureCore = "org.jetbrains" % "sbt-structure-core_2.11" % "0.1-SNAPSHOT"
   val evoInflector = "org.atteo" % "evo-inflector" % "1.2"
   val scalatestFindersPatched = "org.scalatest" % "scalatest-finders-patched" % "0.9.8"
 
@@ -239,6 +240,7 @@ object DependencyGroups {
   val sbtRuntime = Seq(
     sbtStructureExtractor012,
     sbtStructureExtractor013,
+    sbtStructureExtractor100M4,
     sbtLaunch
   )
 }

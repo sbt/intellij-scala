@@ -234,6 +234,8 @@ lazy val pluginPackagerCommunity =
           "launcher/sbt-structure-0.12.jar"),
         Library(Dependencies.sbtStructureExtractor013,
           "launcher/sbt-structure-0.13.jar"),
+        Library(Dependencies.sbtStructureExtractor100M4,
+          "launcher/sbt-structure-1-0-0-m4.jar"),
         Library(Dependencies.sbtLaunch,
           "launcher/sbt-launch.jar")
       )
