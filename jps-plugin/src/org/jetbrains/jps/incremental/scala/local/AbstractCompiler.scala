@@ -5,7 +5,7 @@ import java.io.File
 
 import org.jetbrains.jps.incremental.messages.BuildMessage.Kind
 import xsbti._
-import xsbti.compile.ExtendedCompileProgress
+import xsbti.compile.CompileProgress
 
 /**
  * Nikolay.Tropin
@@ -17,7 +17,7 @@ abstract class AbstractCompiler extends Compiler {
 
   def getLogger(client: Client): Logger = new ClientLogger(client) with JavacOutputParsing
 
-  def getProgress(client: Client): ExtendedCompileProgress = new ClientProgress(client)
+  def getProgress(client: Client): CompileProgress = new ClientProgress(client)
 
   private class ClientLogger(val client: Client) extends Logger {
     def error(msg: F0[String]) {
@@ -42,7 +42,7 @@ abstract class AbstractCompiler extends Compiler {
     }
   }
 
-  private class ClientProgress(client: Client) extends ExtendedCompileProgress {
+  private class ClientProgress(client: Client) extends CompileProgress {
     def generated(source: File, module: File, name: String) {
       client.progress("Generated " + module.getName)
       client.generated(source, module, name)

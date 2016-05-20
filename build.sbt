@@ -218,8 +218,10 @@ lazy val pluginPackagerCommunity =
           "lib/jps/nailgun.jar"),
         Library(Dependencies.compilerInterfaceSources,
           "lib/jps/compiler-interface-sources.jar"),
-        Library(Dependencies.incrementalCompiler,
+        Artifact((assembly in repackagedZinc).value,
           "lib/jps/incremental-compiler.jar"),
+        Library(Dependencies.compilerInterface,
+          "lib/jps/compiler-interface.jar"),
         Library(Dependencies.sbtInterface,
           "lib/jps/sbt-interface.jar"),
         Library(Dependencies.bundledJline,
@@ -273,6 +275,13 @@ lazy val pluginCompressorCommunity =
       Packaging.compressPackagedPlugin(pack.in(pluginPackagerCommunity).value, artifactPath.value)
       artifactPath.value
     }
+  )
+
+lazy val repackagedZinc =
+  newProject("repackagedZinc")
+  .settings(
+    assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false),
+    libraryDependencies += Dependencies.zinc
   )
 
 TaskKey[Unit]("buildDevPlugin") := {
