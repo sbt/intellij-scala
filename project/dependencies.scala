@@ -73,11 +73,11 @@ object Dependencies {
   val macroParadise = "org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full
 
   val nailgun = "org.jetbrains" % "nailgun-patched" % "1.0.0"
-  val compilerInterfaceSources = "org.scala-sbt" % "compiler-bridge_2.10" % "1.0.0-M1" classifier "sources" intransitive ()
-  val compilerInterface = "org.scala-sbt" % "compiler-interface" % "1.0.0-M1" intransitive ()
+  val compilerInterfaceSources = "org.scala-sbt" % "compiler-bridge_2.10" % "1.0.0-M3" classifier "sources" intransitive ()
+  val compilerInterface = "org.scala-sbt" % "compiler-interface" % "1.0.0-M3" intransitive ()
   val bundledJline = "org.jetbrains" % "jline" % "1.0.0"
-  val zinc = "org.scala-sbt" % "zinc_2.11" % "1.0.0-M1"
-  val sbtInterface = "org.scala-sbt" % "util-interface" % "0.1.0-M12"
+  val zinc = "org.scala-sbt" % "zinc_2.11" % "1.0.0-M3"
+  val sbtInterface = "org.scala-sbt" % "util-interface" % "0.1.0-M13"
 }
 
 object DependencyGroups {
